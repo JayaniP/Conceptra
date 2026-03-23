@@ -1,0 +1,6 @@
+{
+  "/paper/[id]/page": "app/paper/[id]/page.js",
+  "/page": "app/page.js",
+  "/upload/page": "app/upload/page.js",
+  "/api/export/notion/route": "app/api/export/notion/route.js"
+}

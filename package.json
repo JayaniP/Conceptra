@@ -1,0 +1,48 @@
+{
+  "name": "conceptra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@remotion/cli": "^4.0.438",
+    "@remotion/player": "^4.0.438",
+    "@supabase/ssr": "^0.3.0",
+    "@supabase/supabase-js": "^2.43.0",
+    "@types/pdf-parse": "^1.1.5",
+    "@vercel/og": "^0.11.1",
+    "clsx": "^2.1.1",
+    "d3": "^7.9.0",
+    "framer-motion": "^11.2.0",
+    "lucide-react": "^0.383.0",
+    "nanoid": "^5.1.7",
+    "next": "14.2.3",
+    "pdf-parse": "^2.4.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-dropzone": "^14.2.3",
+    "react-markdown": "^9.0.1",
+    "remotion": "^4.0.438",
+    "stripe": "^15.8.0",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas-darwin-arm64": "^0.1.97"
+  }
+}
