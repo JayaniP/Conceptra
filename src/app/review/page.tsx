@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ReviewCard } from '@/components/ReviewCard';
+import type { QuizQuestion } from '@/types';
 
 interface ReviewItem {
   id: string;
@@ -14,14 +15,7 @@ interface ReviewItem {
     name: string;
     one_line: string | null;
     svg_visual: string | null;
-    quiz_questions?: Array<{
-      id: string;
-      type: string;
-      question: string;
-      options: string[] | null;
-      correct: string | null;
-      explanation: string | null;
-    }>;
+    quiz_questions?: QuizQuestion[];
     paper?: { id: string; title: string | null };
   };
 }
