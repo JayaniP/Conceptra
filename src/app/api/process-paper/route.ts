@@ -126,7 +126,10 @@ export async function POST(req: NextRequest) {
       // ── 4. Generate visuals + notes + quiz + narration per concept ──
       send('step', { id: 'visuals', label: 'Generating XAI visuals…', status: 'active' });
 
-      await Promise.all(conceptData.concepts.map(async (concept) => {
+      // Process concepts with limited concurrency to avoid rate limits
+      const CONCURRENCY = 2;
+      for (let i = 0; i < conceptData.concepts.length; i += CONCURRENCY) {
+        await Promise.all(conceptData.concepts.slice(i, i + CONCURRENCY).map(async (concept) => {
         // 4a–4d: run AI calls in parallel per concept
         const [svgRaw, notes] = await Promise.all([
           callAnthropicText(
@@ -219,6 +222,7 @@ export async function POST(req: NextRequest) {
           }).catch(() => {/* non-fatal */});
         }
       }));
+      }
 
       send('step', { id: 'visuals', label: 'Visuals ready', status: 'done' });
 
