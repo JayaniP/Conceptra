@@ -68,7 +68,7 @@ export default function CreatePackPage() {
           user_id: userId || null,
           title,
           description: description || null,
-          concept_ids: [...selected],
+          concept_ids: Array.from(selected),
         }),
       });
       const { pack, error: err } = await res.json();
