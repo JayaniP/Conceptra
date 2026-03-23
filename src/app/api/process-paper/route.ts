@@ -126,36 +126,36 @@ export async function POST(req: NextRequest) {
       // ── 4. Generate visuals + notes + quiz + narration per concept ──
       send('step', { id: 'visuals', label: 'Generating XAI visuals…', status: 'active' });
 
-      for (const concept of conceptData.concepts) {
-        // 4a. XAI Visual
-        const svgRaw = await callAnthropicText(
-          XAI_VISUAL_SYSTEM,
-          xaiVisualUser(concept.name, concept.excerpt),
-          2048
-        );
-        // Ensure it starts with <svg
+      await Promise.all(conceptData.concepts.map(async (concept) => {
+        // 4a–4d: run AI calls in parallel per concept
+        const [svgRaw, notes] = await Promise.all([
+          callAnthropicText(
+            XAI_VISUAL_SYSTEM,
+            xaiVisualUser(concept.name, concept.excerpt),
+            2048
+          ),
+          callAnthropicJSON<GeneratedNotes>(
+            NOTES_GENERATION_SYSTEM,
+            notesGenerationUser(concept.name, concept.excerpt),
+            2048
+          ),
+        ]);
+
         const svgVisual = svgRaw.startsWith('<svg') ? svgRaw : svgRaw.slice(svgRaw.indexOf('<svg'));
+        const notesStr = JSON.stringify(notes);
 
-        // 4b. Notes
-        const notes = await callAnthropicJSON<GeneratedNotes>(
-          NOTES_GENERATION_SYSTEM,
-          notesGenerationUser(concept.name, concept.excerpt),
-          2048
-        );
-
-        // 4c. Quiz
-        const quiz = await callAnthropicJSON<GeneratedQuiz>(
-          QUIZ_GENERATION_SYSTEM,
-          quizGenerationUser(concept.name, JSON.stringify(notes)),
-          2048
-        );
-
-        // 4d. Narration script
-        const narrationScript = await callAnthropicText(
-          NARRATION_SYSTEM,
-          narrationUser(concept.name, JSON.stringify(notes)),
-          512
-        );
+        const [quiz, narrationScript] = await Promise.all([
+          callAnthropicJSON<GeneratedQuiz>(
+            QUIZ_GENERATION_SYSTEM,
+            quizGenerationUser(concept.name, notesStr),
+            2048
+          ),
+          callAnthropicText(
+            NARRATION_SYSTEM,
+            narrationUser(concept.name, notesStr),
+            512
+          ),
+        ]);
 
         // Insert concept
         const { data: conceptRow, error: conceptError } = await supabase
@@ -174,29 +174,28 @@ export async function POST(req: NextRequest) {
 
         if (conceptError) throw conceptError;
 
-        // Insert notes
-        await supabase.from('notes').insert({
-          concept_id: conceptRow.id,
-          what_it_is: notes.what_it_is,
-          how_it_works: notes.how_it_works,
-          why_it_matters: notes.why_it_matters,
-          misconceptions: notes.common_misconceptions,
-        });
-
-        // Insert quiz questions
-        for (let i = 0; i < quiz.questions.length; i++) {
-          const q = quiz.questions[i];
-          await supabase.from('quiz_questions').insert({
+        // Insert notes + quiz questions in parallel
+        await Promise.all([
+          supabase.from('notes').insert({
             concept_id: conceptRow.id,
-            type: q.type,
-            question: q.question,
-            options: q.options ?? null,
-            correct: q.correct ?? null,
-            explanation: q.explanation ?? null,
-            rubric: q.rubric ?? null,
-            sort_order: i,
-          });
-        }
+            what_it_is: notes.what_it_is,
+            how_it_works: notes.how_it_works,
+            why_it_matters: notes.why_it_matters,
+            misconceptions: notes.common_misconceptions,
+          }),
+          supabase.from('quiz_questions').insert(
+            quiz.questions.map((q, i) => ({
+              concept_id: conceptRow.id,
+              type: q.type,
+              question: q.question,
+              options: q.options ?? null,
+              correct: q.correct ?? null,
+              explanation: q.explanation ?? null,
+              rubric: q.rubric ?? null,
+              sort_order: i,
+            }))
+          ),
+        ]);
 
         // Generate audio (optional — skip if no API key)
         if (process.env.ELEVENLABS_API_KEY) {
@@ -219,7 +218,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({ concept_id: conceptRow.id, user_id: userId }),
           }).catch(() => {/* non-fatal */});
         }
-      }
+      }));
 
       send('step', { id: 'visuals', label: 'Visuals ready', status: 'done' });
 
