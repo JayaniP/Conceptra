@@ -14,12 +14,10 @@ export interface ParsedPaper {
  * Extract text from a PDF Buffer.
  */
 export async function parsePdf(buffer: Buffer): Promise<ParsedPaper> {
-  const worker = await import('pdf-parse/worker');
-  const { PDFParse } = await import('pdf-parse');
-  PDFParse.setWorker(worker.getPath());
-  const parser = new PDFParse({ data: buffer });
-  const textResult = await parser.getText();
-  const text = textResult.text || '';
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string; numpages: number }>;
+  const data = await pdfParse(buffer);
+  const text = data.text || '';
   const lines = text.split('\n').map((l: string) => l.trim()).filter(Boolean);
 
   const title = lines[0]?.slice(0, 200) ?? 'Untitled Paper';
@@ -33,14 +31,13 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPaper> {
   }
 
   const fullText = text.slice(0, 30000);
-  await parser.destroy();
 
   return {
     title,
     authors: [],
     abstract,
     fullText,
-    pageCount: textResult.pages?.length ?? 0,
+    pageCount: data.numpages ?? 0,
   };
 }
 
